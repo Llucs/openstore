@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val db = (app as OpenStoreApp).db
-    private val repos = app.repos
+    private val repos = (app as OpenStoreApp).repos
 
     val query = MutableStateFlow("")
 
