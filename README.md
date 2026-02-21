@@ -1,4 +1,4 @@
-# OpenStore
+# OpenStore (WIP)
 
 Cliente alternativo do F-Droid para Android.
 
