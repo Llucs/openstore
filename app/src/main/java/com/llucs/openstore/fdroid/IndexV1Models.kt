@@ -28,8 +28,18 @@ data class AppV1(
     val sourceCode: String? = null,
     val issueTracker: String? = null,
     val added: Long? = null,
-    val lastUpdated: Long? = null
+    val lastUpdated: Long? = null,
+    val localized: Map<String, AppLocalizedV1>? = null
 )
+
+
+@Serializable
+data class AppLocalizedV1(
+    val name: String? = null,
+    val summary: String? = null,
+    val description: String? = null
+)
+
 
 @Serializable
 data class PackageVersionV1(

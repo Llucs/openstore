@@ -18,9 +18,10 @@ object IndexV1Mapper {
         index.packages.forEach { (pkg, versions) ->
             val latest = versions.maxByOrNull { it.versionCode } ?: return@forEach
             val app = appByPkg[pkg]
-            val name = (app?.name ?: pkg).trim()
-            val summary = (app?.summary ?: "").trim()
-            val description = (app?.description ?: "").trim()
+            val localized = app?.localized.orEmpty()
+            val name = (app?.name ?: pickLocalizedText(localized) { it.name } ?: pkg).trim()
+            val summary = (app?.summary ?: pickLocalizedText(localized) { it.summary } ?: "").trim()
+            val description = (app?.description ?: pickLocalizedText(localized) { it.description } ?: "").trim()
             val icon = (app?.icon ?: "").trim()
             val webSite = (app?.webSite ?: "").trim()
             val source = (app?.sourceCode ?: "").trim()
@@ -55,5 +56,25 @@ object IndexV1Mapper {
         }
 
         return Mapped(appsOut, versionsOut)
+    }
+
+    private fun pickLocalizedText(
+        localized: Map<String, AppLocalizedV1>,
+        selector: (AppLocalizedV1) -> String?
+    ): String? {
+        if (localized.isEmpty()) return null
+
+        val preferredKeys = listOf("pt-BR", "pt_BR", "pt", "en-US", "en_US", "en")
+        preferredKeys.forEach { key ->
+            val value = localized[key]?.let(selector)?.trim().orEmpty()
+            if (value.isNotBlank()) return value
+        }
+
+        localized.values.forEach { entry ->
+            val value = selector(entry)?.trim().orEmpty()
+            if (value.isNotBlank()) return value
+        }
+
+        return null
     }
 }
