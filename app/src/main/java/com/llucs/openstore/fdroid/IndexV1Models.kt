@@ -1,6 +1,5 @@
 package com.llucs.openstore.fdroid
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -32,14 +31,13 @@ data class AppV1(
     val localized: Map<String, AppLocalizedV1>? = null
 )
 
-
 @Serializable
 data class AppLocalizedV1(
     val name: String? = null,
     val summary: String? = null,
-    val description: String? = null
+    val description: String? = null,
+    val icon: String? = null
 )
-
 
 @Serializable
 data class PackageVersionV1(

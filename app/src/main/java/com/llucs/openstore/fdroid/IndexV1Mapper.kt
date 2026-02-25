@@ -22,7 +22,7 @@ object IndexV1Mapper {
             val name = (app?.name ?: pickLocalizedText(localized) { it.name } ?: pkg).trim()
             val summary = (app?.summary ?: pickLocalizedText(localized) { it.summary } ?: "").trim()
             val description = (app?.description ?: pickLocalizedText(localized) { it.description } ?: "").trim()
-            val icon = (app?.icon ?: "").trim()
+            val icon = (app?.icon ?: pickLocalizedText(localized) { it.icon } ?: "").trim()
             val webSite = (app?.webSite ?: "").trim()
             val source = (app?.sourceCode ?: "").trim()
             val issues = (app?.issueTracker ?: "").trim()
