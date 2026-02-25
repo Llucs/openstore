@@ -24,7 +24,9 @@ interface AppDao {
             versions.apkName AS apkName,
             versions.sha256 AS sha256,
             versions.sizeBytes AS sizeBytes,
-            versions.minSdk AS minSdk
+            versions.minSdk AS minSdk,
+            apps.addedEpochMs AS addedEpochMs,
+            apps.lastUpdatedEpochMs AS lastUpdatedEpochMs
         FROM apps
         JOIN repos ON repos.id = apps.repoId
         LEFT JOIN versions ON apps.packageName = versions.packageName
