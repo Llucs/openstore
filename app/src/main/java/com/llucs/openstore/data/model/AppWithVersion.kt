@@ -12,5 +12,7 @@ data class AppWithVersion(
     val apkName: String?,
     val sha256: String?,
     val sizeBytes: Long?,
-    val minSdk: Int?
+    val minSdk: Int?,
+    val addedEpochMs: Long,
+    val lastUpdatedEpochMs: Long
 )
