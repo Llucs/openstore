@@ -39,10 +39,15 @@ class ReposViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun syncNow(force: Boolean = false) {
+        if (syncState.value is SyncState.Running) return
         viewModelScope.launch {
             syncState.value = SyncState.Running
-            val result = reposRepo.syncEnabledRepos(force)
-            syncState.value = SyncState.Done(result.reposUpdated, result.appsProcessed, result.errors)
+            try {
+                val result = reposRepo.syncEnabledRepos(force)
+                syncState.value = SyncState.Done(result.reposUpdated, result.appsProcessed, result.errors)
+            } catch (e: Exception) {
+                syncState.value = SyncState.Done(0, 0, listOf(e.message ?: e.javaClass.simpleName))
+            }
         }
     }
 
