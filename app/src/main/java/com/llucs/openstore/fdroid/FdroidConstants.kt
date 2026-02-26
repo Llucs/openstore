@@ -23,18 +23,38 @@ object FdroidConstants {
             return listOf(raw)
         }
 
-        val b = normalizeBaseUrl(baseUrl)
-        val cleaned = raw.trimStart('/')
-        if (raw.contains('/')) return listOf(b + cleaned)
+        val normalizedBase = normalizeBaseUrl(baseUrl)
+        val cleaned = raw.removePrefix("./").trimStart('/')
 
-        return linkedSetOf(
-            b + "icons-640/" + cleaned,
-            b + "icons-320/" + cleaned,
-            b + "icons-240/" + cleaned,
-            b + "icons-160/" + cleaned,
-            b + "icons-128/" + cleaned,
-            b + "icons/" + cleaned,
-            b + cleaned
-        ).toList()
+        val candidates = linkedSetOf<String>()
+
+        if (cleaned.contains('/')) {
+            candidates += normalizedBase + cleaned
+            if (cleaned.startsWith("repo/")) {
+                candidates += normalizedBase + cleaned.removePrefix("repo/")
+            } else {
+                candidates += normalizedBase + "repo/" + cleaned
+            }
+            return candidates.toList()
+        }
+
+        val iconDirs = listOf(
+            "icons-640/",
+            "icons-480/",
+            "icons-320/",
+            "icons-240/",
+            "icons-160/",
+            "icons-128/",
+            "icons-96/",
+            "icons-72/",
+            "icons-48/",
+            "icons/"
+        )
+
+        iconDirs.forEach { dir -> candidates += normalizedBase + dir + cleaned }
+        candidates += normalizedBase + cleaned
+        candidates += normalizedBase + "repo/" + cleaned
+
+        return candidates.toList()
     }
 }

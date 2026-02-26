@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.llucs.openstore.data.AppDatabase
 import com.llucs.openstore.data.entity.RepoEntity
+import kotlinx.coroutines.yield
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import java.io.File
@@ -56,21 +57,31 @@ class FdroidSyncEngine(
             val index = extractAndParseIndexV1(tmpJar)
             val mapped = IndexV1Mapper.map(repo.id, index)
 
-            db.withTransaction {
-                db.appDao().deleteByRepo(repo.id)
-                db.versionDao().deleteByRepo(repo.id)
-                db.appDao().upsertAll(mapped.apps)
-                db.versionDao().upsertAll(mapped.versions)
-                db.repoDao().update(
-                    repo.copy(
-                        etag = dl.etag,
-                        lastModified = dl.lastModified,
-                        lastSyncEpochMs = System.currentTimeMillis()
-                    )
-                )
+            db.versionDao().deleteByRepo(repo.id)
+            db.appDao().deleteByRepo(repo.id)
+
+            val total = mapped.apps.size
+            val chunkSize = 200
+            var inserted = 0
+            while (inserted < total) {
+                val end = minOf(inserted + chunkSize, total)
+                db.withTransaction {
+                    db.appDao().upsertAll(mapped.apps.subList(inserted, end))
+                    db.versionDao().upsertAll(mapped.versions.subList(inserted, end))
+                }
+                inserted = end
+                yield()
             }
 
-            return SyncResult(changed = true, appsUpserted = mapped.apps.size)
+            db.repoDao().update(
+                repo.copy(
+                    etag = dl.etag,
+                    lastModified = dl.lastModified,
+                    lastSyncEpochMs = System.currentTimeMillis()
+                )
+            )
+
+            return SyncResult(changed = true, appsUpserted = total)
         } finally {
             tmpJar.delete()
         }

@@ -2,6 +2,7 @@ package com.llucs.openstore.fdroid
 
 import com.llucs.openstore.data.entity.AppEntity
 import com.llucs.openstore.data.entity.VersionEntity
+import java.util.Locale
 
 object IndexV1Mapper {
 
@@ -19,10 +20,24 @@ object IndexV1Mapper {
             val latest = versions.maxByOrNull { it.versionCode } ?: return@forEach
             val app = appByPkg[pkg]
             val localized = app?.localized.orEmpty()
-            val name = (app?.name ?: pickLocalizedText(localized) { it.name } ?: pkg).trim()
-            val summary = (app?.summary ?: pickLocalizedText(localized) { it.summary } ?: "").trim()
-            val description = (app?.description ?: pickLocalizedText(localized) { it.description } ?: "").trim()
-            val icon = (app?.icon ?: pickLocalizedText(localized) { it.icon } ?: "").trim()
+
+            val localizedPick = pickLocalizedEntry(localized)
+            val localizedEntry = localizedPick?.second
+            val localizedKey = localizedPick?.first.orEmpty()
+
+            val name = (app?.name ?: localizedEntry?.name ?: pkg).orEmpty().trim().ifBlank { pkg }
+            val summary = (app?.summary ?: localizedEntry?.summary ?: "").orEmpty().trim()
+            val description = (app?.description ?: localizedEntry?.description ?: "").orEmpty().trim()
+
+            val rawIcon = (app?.icon ?: localizedEntry?.icon ?: "").orEmpty().trim()
+            val icon = resolveIconPath(
+                packageName = pkg,
+                localizedKey = localizedKey,
+                localizedIcon = localizedEntry?.icon,
+                fallbackIcon = app?.icon,
+                chosenRawIcon = rawIcon
+            )
+
             val webSite = (app?.webSite ?: "").trim()
             val source = (app?.sourceCode ?: "").trim()
             val issues = (app?.issueTracker ?: "").trim()
@@ -48,7 +63,7 @@ object IndexV1Mapper {
                 versionCode = latest.versionCode,
                 versionName = latest.versionName,
                 apkName = latest.apkName,
-                sha256 = if (latest.hashType.equals("sha256", ignoreCase = true)) latest.hash else latest.hash,
+                sha256 = latest.hash,
                 sizeBytes = latest.size,
                 minSdk = latest.minSdkVersion,
                 addedEpochMs = latest.added ?: 0L
@@ -58,23 +73,76 @@ object IndexV1Mapper {
         return Mapped(appsOut, versionsOut)
     }
 
-    private fun pickLocalizedText(
-        localized: Map<String, AppLocalizedV1>,
-        selector: (AppLocalizedV1) -> String?
-    ): String? {
+    private fun resolveIconPath(
+        packageName: String,
+        localizedKey: String,
+        localizedIcon: String?,
+        fallbackIcon: String?,
+        chosenRawIcon: String
+    ): String {
+        val chosen = chosenRawIcon.trim()
+        if (chosen.isBlank()) return ""
+
+        val appIcon = fallbackIcon.orEmpty().trim()
+        if (appIcon.isNotBlank() && chosen == appIcon) {
+            return appIcon
+        }
+
+        val locIcon = localizedIcon.orEmpty().trim()
+        if (locIcon.isNotBlank() && chosen == locIcon) {
+            if (locIcon.startsWith("http://", ignoreCase = true) || locIcon.startsWith("https://", ignoreCase = true)) {
+                return locIcon
+            }
+            if (locIcon.contains('/')) return locIcon
+            val safeLocale = localizedKey.trim().replace('\\', '/').trim('/').ifBlank { defaultLocaleKey() }
+            return "$packageName/$safeLocale/$locIcon"
+        }
+
+        return chosen
+    }
+
+    private fun defaultLocaleKey(): String {
+        val locale = Locale.getDefault()
+        val lang = locale.language.orEmpty()
+        val country = locale.country.orEmpty()
+        return when {
+            lang.isBlank() -> "en-US"
+            country.isBlank() -> lang
+            else -> "$lang-$country"
+        }
+    }
+
+    private fun pickLocalizedEntry(localized: Map<String, AppLocalizedV1>): Pair<String, AppLocalizedV1>? {
         if (localized.isEmpty()) return null
 
-        val preferredKeys = listOf("pt-BR", "pt_BR", "pt", "en-US", "en_US", "en")
+        val default = Locale.getDefault()
+        val dynamicKeys = buildList {
+            val language = default.language.orEmpty()
+            val country = default.country.orEmpty()
+            if (language.isNotBlank() && country.isNotBlank()) {
+                add("$language-$country")
+                add("${language}_${country}")
+            }
+            if (language.isNotBlank()) add(language)
+        }
+
+        val preferredKeys = dynamicKeys + listOf("pt-BR", "pt_BR", "pt", "en-US", "en_US", "en")
         preferredKeys.forEach { key ->
-            val value = localized[key]?.let(selector)?.trim().orEmpty()
-            if (value.isNotBlank()) return value
+            val entry = localized[key] ?: return@forEach
+            if (entryHasUsefulContent(entry)) return key to entry
         }
 
-        localized.values.forEach { entry ->
-            val value = selector(entry)?.trim().orEmpty()
-            if (value.isNotBlank()) return value
+        localized.entries.forEach { (key, entry) ->
+            if (entryHasUsefulContent(entry)) return key to entry
         }
 
-        return null
+        return localized.entries.firstOrNull()?.toPair()
+    }
+
+    private fun entryHasUsefulContent(entry: AppLocalizedV1): Boolean {
+        return !entry.name.isNullOrBlank()
+            || !entry.summary.isNullOrBlank()
+            || !entry.description.isNullOrBlank()
+            || !entry.icon.isNullOrBlank()
     }
 }
