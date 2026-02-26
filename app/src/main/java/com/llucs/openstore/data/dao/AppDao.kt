@@ -37,10 +37,9 @@ interface AppDao {
             LOWER(apps.summary) LIKE '%' || LOWER(:query) || '%' OR
             LOWER(apps.packageName) LIKE '%' || LOWER(:query) || '%'
         )
-        ORDER BY apps.name COLLATE NOCASE
-        LIMIT :limit
+        ORDER BY CASE WHEN TRIM(apps.name) = '' THEN apps.packageName ELSE apps.name END COLLATE NOCASE
     """)
-    fun observeApps(query: String, limit: Int = 500): Flow<List<AppWithVersion>>
+    fun observeApps(query: String): Flow<List<AppWithVersion>>
 
     @Query("SELECT * FROM apps WHERE packageName = :packageName LIMIT 1")
     fun observeApp(packageName: String): Flow<AppEntity?>
