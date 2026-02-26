@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
 import com.llucs.openstore.data.model.AppWithVersion
@@ -96,7 +97,13 @@ fun HomeScreen(navController: NavController) {
         CenterAlignedTopAppBar(
             title = { Text("OpenStore", fontWeight = FontWeight.SemiBold) },
             actions = {
-                IconButton(onClick = { navController.navigate("repos") }) {
+                IconButton(onClick = {
+                    navController.navigate("repos") {
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }) {
                     Icon(Icons.Outlined.Refresh, contentDescription = "Repos")
                 }
             },
