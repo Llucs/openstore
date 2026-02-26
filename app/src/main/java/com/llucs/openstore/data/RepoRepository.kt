@@ -7,6 +7,8 @@ import com.llucs.openstore.fdroid.FdroidSyncEngine
 import com.llucs.openstore.fdroid.FingerprintResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 class RepoRepository(
@@ -17,6 +19,7 @@ class RepoRepository(
     private val appDao = db.appDao()
     private val versionDao = db.versionDao()
     private val engine = FdroidSyncEngine(context, db)
+    private val syncMutex = Mutex()
 
     suspend fun ensureDefaults() {
         withContext(Dispatchers.IO) {
@@ -54,21 +57,23 @@ class RepoRepository(
 
     suspend fun syncEnabledRepos(force: Boolean = false): SyncSummary =
         withContext(Dispatchers.IO) {
-            ensureDefaults()
-            val repos = repoDao.getEnabledRepos()
-            var apps = 0
-            var updatedRepos = 0
-            val errors = mutableListOf<String>()
-            repos.forEach { repo ->
-                try {
-                    val result = engine.syncRepo(repo, force)
-                    if (result.changed) updatedRepos += 1
-                    apps += result.appsUpserted
-                } catch (e: Exception) {
-                    errors += "${repo.name}: ${e.message ?: e.javaClass.simpleName}"
+            syncMutex.withLock {
+                ensureDefaults()
+                val repos = repoDao.getEnabledRepos()
+                var apps = 0
+                var updatedRepos = 0
+                val errors = mutableListOf<String>()
+                repos.forEach { repo ->
+                    try {
+                        val result = engine.syncRepo(repo, force)
+                        if (result.changed) updatedRepos += 1
+                        apps += result.appsUpserted
+                    } catch (e: Exception) {
+                        errors += "${repo.name}: ${e.message ?: e.javaClass.simpleName}"
+                    }
                 }
+                SyncSummary(updatedRepos, apps, errors)
             }
-            SyncSummary(updatedRepos, apps, errors)
         }
 
     suspend fun probeRepoFingerprint(baseUrl: String): FingerprintResult =
