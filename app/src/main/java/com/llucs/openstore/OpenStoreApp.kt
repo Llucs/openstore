@@ -1,7 +1,12 @@
 package com.llucs.openstore
 
 import android.app.Application
+import androidx.work.BackoffPolicy
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.llucs.openstore.data.AppDatabase
@@ -22,14 +27,35 @@ class OpenStoreApp : Application() {
         db = AppDatabase.create(this)
         repos = RepoRepository(this, db)
 
-        val request = PeriodicWorkRequestBuilder<RepoSyncWorker>(12, TimeUnit.HOURS)
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val periodicRequest = PeriodicWorkRequestBuilder<RepoSyncWorker>(
+            12, TimeUnit.HOURS,
+            1, TimeUnit.HOURS
+        )
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
             .addTag(RepoSyncWorker.TAG)
             .build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             RepoSyncWorker.UNIQUE_NAME,
             ExistingPeriodicWorkPolicy.KEEP,
-            request
+            periodicRequest
+        )
+
+        val startupRequest = OneTimeWorkRequestBuilder<RepoSyncWorker>()
+            .setConstraints(constraints)
+            .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+            .addTag(RepoSyncWorker.TAG_STARTUP)
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            RepoSyncWorker.UNIQUE_STARTUP_NAME,
+            ExistingWorkPolicy.KEEP,
+            startupRequest
         )
     }
 }
