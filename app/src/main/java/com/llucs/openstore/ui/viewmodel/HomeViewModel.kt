@@ -8,7 +8,10 @@ import com.llucs.openstore.data.model.AppWithVersion
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -20,7 +23,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val query = MutableStateFlow("")
 
     val apps: StateFlow<List<AppWithVersion>> =
-        query.flatMapLatest { q -> db.appDao().observeApps(query = q.trim()) }
+        query
+            .map { it.trim() }
+            .debounce(250)
+            .distinctUntilChanged()
+            .flatMapLatest { q -> db.appDao().observeApps(query = q) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
