@@ -183,7 +183,9 @@ fun AppDetailsScreen(packageName: String, navController: NavController) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Informações", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.height(10.dp))
-                    InfoRow("Versão", "v${version.versionName} (${version.versionCode})")
+                    val versionLabel = version.versionName.takeIf { it.isNotBlank() }?.let { "v$it" } ?: "Desconhecida"
+                    val versionCodeLabel = version.versionCode?.takeIf { it > 0 }?.let { " ($it)" }.orEmpty()
+                    InfoRow("Versão", "$versionLabel$versionCodeLabel")
                     InfoRow("minSdk", version.minSdk.toString())
                     InfoRow("Tamanho", formatSize(version.sizeBytes))
                     InfoRow("SHA-256", version.sha256)

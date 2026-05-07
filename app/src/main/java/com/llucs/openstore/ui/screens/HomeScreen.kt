@@ -142,7 +142,7 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
-                placeholder = { Text("Buscar apps, pacote ou descrição") },
+                label = { Text("Buscar apps, pacote ou descrição") },
                 shape = MaterialTheme.shapes.large
             )
 
