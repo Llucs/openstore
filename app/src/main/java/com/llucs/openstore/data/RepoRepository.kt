@@ -1,6 +1,7 @@
 package com.llucs.openstore.data
 
 import android.content.Context
+import com.llucs.openstore.OpenStoreApp
 import com.llucs.openstore.data.entity.RepoEntity
 import com.llucs.openstore.fdroid.FdroidConstants
 import com.llucs.openstore.fdroid.FdroidSyncEngine
@@ -18,7 +19,7 @@ class RepoRepository(
     private val repoDao = db.repoDao()
     private val appDao = db.appDao()
     private val versionDao = db.versionDao()
-    private val engine = FdroidSyncEngine(context, db)
+    private val engine = FdroidSyncEngine(context, db, (context as OpenStoreApp).fdroidApi)
     private val syncMutex = Mutex()
 
     suspend fun ensureDefaults() {

@@ -3,7 +3,6 @@ package com.llucs.openstore.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -30,6 +29,7 @@ private val OpenStoreTypography = Typography(
     bodyLarge = TextStyle(fontSize = 16.sp),
     bodyMedium = TextStyle(fontSize = 14.sp),
     labelLarge = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
+    labelMedium = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium),
 )
 
 private val OpenStoreShapes = Shapes(
@@ -46,15 +46,16 @@ fun OpenStoreTheme(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val colors: ColorScheme =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+    val colorScheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        } else {
-            if (darkTheme) DarkColors else LightColors
         }
+        darkTheme -> DarkColors
+        else -> LightColors
+    }
 
     MaterialTheme(
-        colorScheme = colors,
+        colorScheme = colorScheme,
         typography = OpenStoreTypography,
         shapes = OpenStoreShapes,
         content = content

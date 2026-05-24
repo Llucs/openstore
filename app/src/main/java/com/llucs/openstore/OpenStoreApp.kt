@@ -9,8 +9,10 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.llucs.openstore.api.FdroidApiService
 import com.llucs.openstore.data.AppDatabase
 import com.llucs.openstore.data.RepoRepository
+import com.llucs.openstore.data.preferences.TokenManager
 import com.llucs.openstore.sync.RepoSyncWorker
 import java.util.concurrent.TimeUnit
 
@@ -22,9 +24,17 @@ class OpenStoreApp : Application() {
     lateinit var repos: RepoRepository
         private set
 
+    lateinit var tokenManager: TokenManager
+        private set
+
+    lateinit var fdroidApi: FdroidApiService
+        private set
+
     override fun onCreate() {
         super.onCreate()
         db = AppDatabase.create(this)
+        tokenManager = TokenManager(this)
+        fdroidApi = FdroidApiService(cacheDir)
         repos = RepoRepository(this, db)
 
         val constraints = Constraints.Builder()
