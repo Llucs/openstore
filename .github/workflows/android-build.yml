@@ -1,4 +1,4 @@
-Name: Android Build
+name: Android Build
 
 on:
   workflow_dispatch:
@@ -34,19 +34,19 @@ jobs:
         continue-on-error: true
 
       - name: Upload Debug APK
-        if: steps:build_debug:outcome == 'success'
+        if: steps.build_debug.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: OpenStore-debug-apk
           path: app/build/outputs/apk/debug/*.apk
 
       - name: Upload Release APK
-        if: steps:build_release:outcome == 'success'
+        if: steps.build_release.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: OpenStore-release-apk
           path: app/build/outputs/apk/release/*.apk
 
       - name: Check Build Status
-        if: steps:build_debug:outcome == 'failure' && steps:build_release:outcome == 'failure'
+        if: steps.build_debug.outcome == 'failure' && steps.build_release.outcome == 'failure'
         run: exit 1
